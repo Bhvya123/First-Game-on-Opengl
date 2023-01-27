@@ -15,10 +15,11 @@ const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 aPos;\n"
                                  "layout (location = 1) in vec2 aTex;\n"
                                  "out vec2 TexCoord;\n"
-                                 "uniform mat4 moveChar;\n"
+                                 "uniform vec3 moveChar;\n"
+                                 "uniform vec3 moveCoin;\n"
                                  "void main()\n"
                                  "{\n"
-                                 "   gl_Position = moveChar * vec4(aPos, 1.0);\n"
+                                 "   gl_Position = vec4(aPos+moveCoin+moveChar, 1.0);\n"
                                  "   TexCoord = aTex;\n"
                                  "}\0";
 
@@ -36,7 +37,12 @@ void framebuffer_size_callback(GLFWwindow *, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
-float n = 0.001f, m = 0.001f; 
+float n = 0.001f;   // Translating textures 
+float m = 0.001f;   // For moving the Character
+float o = 1.0f;   // For moving coin
+
+float timeNow;
+
 void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -45,18 +51,31 @@ void processInput(GLFWwindow *window)
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        (m < 1.29f) ? m += 0.0017f : m += 0;
+        (m < 1.29f) ? m += ((float)(glfwGetTime() - timeNow)) * 1.0f : m += 0;
     }
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
     {
-        (m <= 0.0) ? m = -0.0 : m -= 0.0015f;
+        (m <= 0.0) ? m = 0.0f : m -= ((float)(glfwGetTime() - timeNow) * 1.0f);
+    }
+    if(glfwGetKey(window, GLFW_KEY_INSERT) == GLFW_RELEASE)
+    {
+        n -= (float)(glfwGetTime() - timeNow) * 1.0f;            
+        o -= (float)(glfwGetTime() - timeNow) * 1.1f; 
     }
 }
 
+void RandomCoin(float *y)
+{
+    *y = -0.5f + ((float)rand()/(float)RAND_MAX);
+    return;
+}
+
+// float y = -0.5f + (float)(rand()/((float)((float)RAND_MAX/1.29f+0.5f)));
 int main()
 {
     time_t start, end;
-    srand((unsigned)time(NULL));
+    srand(time(0));
+    int numCoins = 0;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -147,6 +166,12 @@ int main()
         1.0f, -0.5f, 0.5f,    0.0f, 0.0f, // right top
         -1.0f, -0.5f, 0.5f,   1.0f, 0.0f, // left top
         1.0f, -1.0f, 0.5f,    0.0f, 1.0f, // right bot
+
+        // coins:-
+        0.7f, 0.4f , 0.2f,    1.0f, 1.0f,   // left bot // 41   40
+        0.76f, 0.5f, 0.2f,    0.0f, 0.0f,   // right top //46   45
+        0.7f, 0.5f, 0.2f,     1.0f, 0.0f,   // left top // 51   50
+        0.76f, 0.4f, 0.2f,    0.0f, 1.0f   // right bot // 56   55
     };
 
     unsigned int indices1[] = {
@@ -154,6 +179,8 @@ int main()
         0, 1, 3,
         4, 6, 5,
         4, 5, 7,
+        8, 10, 9,
+        8, 9, 11
     };
 
     unsigned int VBO, VAO, EBO;
@@ -215,7 +242,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     int width2, height2, nrChannels2;
-    unsigned char *data2 = stbi_load("../textures/coin.png", &width2, &height2, &nrChannels2, 0);
+    unsigned char *data2 = stbi_load("../textures/coin5.png", &width2, &height2, &nrChannels2, 0);
     if (data2)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width2, height2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
@@ -230,27 +257,48 @@ int main()
     int textureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
     int transLoc = glGetUniformLocation(shaderProgram, "transform");
     int charLoc = glGetUniformLocation(shaderProgram, "moveChar");
-    
+    int coinLoc = glGetUniformLocation(shaderProgram, "moveCoin");
+
     glm::vec2 transform = glm::vec2(0.0f);
-    glm::mat4 moveChar = glm::mat4(1.0f);
-    
-    glUniformMatrix4fv(charLoc, 1, GL_FALSE, glm::value_ptr(moveChar));
+    glm::vec3 moveChar = glm::vec3(0.0f);
+    glm::vec3 moveCoin = glm::vec3(0.0f);
+    glUniform3fv(coinLoc, 1, glm::value_ptr(moveCoin));
+    glUniform3fv(charLoc, 1, glm::value_ptr(moveChar));
     glUniform2fv(transLoc, 1, glm::value_ptr(transform));
 
     // render loop
-    // glEnable(GL_DEPTH_TEST);
-    // float y = -0.5 + static_cast<float>(rand()/(static_cast<float>(RAND_MAX/1.29+0.5)));
-    time(&start);
-    float y = -0.5f + (float)(rand()/((float)(RAND_MAX/1.29f+0.5f)));
+    glEnable(GL_DEPTH_TEST);
+    float y = -0.5f + ((float)rand()/(float)RAND_MAX);
+    bool flag = false;
     while (!glfwWindowShouldClose(window))
     {
         // input
         processInput(window);
+        timeNow = glfwGetTime();
+        // if((int)(end-start)%3 == 0 && flag == false) flag = true;
 
         // rendering commands here
         // ...
+        flag = false;
+        if(y < 0)
+        {
+            vertices[41] = y;
+            vertices[46] = y+0.1f;
+            vertices[51] = y+0.1f;
+            vertices[56] = y;
+        }
+        else
+        {
+            vertices[41] = y-0.1f;
+            vertices[46] = y;
+            vertices[51] = y-0.1f;
+            vertices[56] = y;
+        }
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+        moveCoin = glm::vec3(0.0f);
+        glUniform3fv(coinLoc, 1, glm::value_ptr(moveCoin));
 
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -271,10 +319,8 @@ int main()
 
         transform = glm::vec2(0.0f);
         glUniform2fv(transLoc, 1, glm::value_ptr(transform));
-        moveChar = glm::translate(moveChar, glm::vec3(0.0f, m, 0.0f));
-        glUniformMatrix4fv(charLoc, 1, GL_FALSE, glm::value_ptr(moveChar));
-
-        // glUniformMatrix4fv(transLoc, 1, GL_FALSE, glm::value_ptr(transform));
+        moveChar = glm::vec3(0.0f, m, 0.0f);
+        glUniform3fv(charLoc, 1, glm::value_ptr(moveChar));
         
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture0);
@@ -284,31 +330,62 @@ int main()
 
         transform = glm::vec2(n, 0.0f);
         glUniform2fv(transLoc, 1, glm::value_ptr(transform));
-        moveChar = glm::mat4(1.0f);
-        glUniformMatrix4fv(charLoc, 1, GL_FALSE, glm::value_ptr(moveChar));
-
-        // transform = glm::translate(transform, glm::vec3(1.0f, 0.0f, 0.0f));
-        // glUniformMatrix4fv(transLoc, 1, GL_FALSE, glm::value_ptr(transform));
+        moveChar = glm::vec3(0.0f);
+        glUniform3fv(charLoc, 1, glm::value_ptr(moveChar));
 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6*sizeof(unsigned int)));
-        n -= 0.001f;
-        
-        // (m <= -0.5) ? m = -0.5 : m -= 0.001f;
-        // (m < 1.29f) ? m += 0.0015f : m += 0;
-        // check and call events and swap buffers
-        // y = -0.5 + static_cast<float>(rand()/(static_cast<float>(RAND_MAX/1.29+0.5)));
-        time(&end);
-        if ((int)(end-start)%10 == 0)
+
+        transform = glm::vec2(0.0f);
+        glUniform2fv(transLoc, 1, glm::value_ptr(transform));
+        moveCoin = glm::vec3(o, 0.0f, 0.0f);
+        glUniform3fv(coinLoc, 1, glm::value_ptr(moveCoin));
+
+        glUniform1i(textureLoc, 2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, texture2);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(12 * sizeof(unsigned int)));
+
+        if((vertices[40] + o >= -0.7f && vertices[40] + o <= -0.6f) || 
+           (vertices[45] + o >= -0.7f && vertices[45] + o <= -0.6f) || 
+           (vertices[50] + o >= -0.7f && vertices[50] + o <= -0.6f) || 
+           (vertices[55] + o >= -0.7f && vertices[55] + o <= -0.6f)   )
         {
+            if((-0.5f + m <= vertices[41] && -0.3f + m >= vertices[41]) ||
+               (-0.5f + m <= vertices[46] && -0.3f + m >= vertices[46]) ||
+               (-0.5f + m <= vertices[51] && -0.3f + m >= vertices[51]) ||
+               (-0.5f + m <= vertices[56] && -0.3f + m >= vertices[56])   )
+            {
+                flag = true;
+                std::cout<<"*";
+            }
         }
+
+        if(flag)
+        {
+            o = 1.0f;
+            RandomCoin(&y);
+            numCoins++;
+            std::cout << numCoins << std::endl;
+        }
+        else
+        {
+            // o -= (float)(glfwGetTime() - timeNow) * 1.1f; 
+            if(o <= -1.7f) 
+            {
+                o = 1.0f;
+                RandomCoin(&y);
+            }
+        }
+        // n -= (float)(glfwGetTime() - timeNow) * 2.0f;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    glDeleteVertexArrays(1, &VAO);
+    
     glDeleteBuffers(1, &EBO);
     glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

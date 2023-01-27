@@ -1,9 +1,0 @@
-/home/bhvyakothari/Opengl/Assignment1/build/CMakeFiles/rebuild_cache.dir
-/home/bhvyakothari/Opengl/Assignment1/build/CMakeFiles/edit_cache.dir
-/home/bhvyakothari/Opengl/Assignment1/build/CMakeFiles/glad.dir
-/home/bhvyakothari/Opengl/Assignment1/build/CMakeFiles/app.dir
-/home/bhvyakothari/Opengl/Assignment1/build/libraries/glfw/CMakeFiles/rebuild_cache.dir
-/home/bhvyakothari/Opengl/Assignment1/build/libraries/glfw/CMakeFiles/edit_cache.dir
-/home/bhvyakothari/Opengl/Assignment1/build/libraries/glfw/src/CMakeFiles/rebuild_cache.dir
-/home/bhvyakothari/Opengl/Assignment1/build/libraries/glfw/src/CMakeFiles/edit_cache.dir
-/home/bhvyakothari/Opengl/Assignment1/build/libraries/glfw/src/CMakeFiles/glfw.dir
