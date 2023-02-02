@@ -649,12 +649,17 @@ int main()
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        float lvlCompletionRate = (float)(timeNow - lvlStartTime)/10.f * 100.f;
         std::string str = "Coins collected: ";
         str.append(std::to_string(numCoins));
         RenderText(shader, str, 20.0f,570.0f, 0.3f, glm::vec3(1.0f, 1.0f, 1.0f));
         str = "Level ";
         str.append(std::to_string(lvlNum));
         RenderText(shader, str, 700.0f,570.0f,0.4f, glm::vec3(092.0f, 046.0f, 023.0f));
+        str = "Level Completion Rate: ";
+        str.append(std::to_string(lvlCompletionRate));
+        RenderText(shader, str, 360.0f,570.0f,0.4f, glm::vec3(0.23f, 0.2f, 0.13f));
+
 
         glUseProgram(shaderProgram);
 
@@ -797,9 +802,9 @@ int main()
             str = "You WON";
             // str.append(std::to_string(lvlNum));
             RenderText(shader, str, 250.0f,500.0f, 1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-            str = "Level Reached ";
-            str.append(std::to_string(lvlNum));
-            RenderText(shader, str, 250.0f,300.0f, 1.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+            str = " ;) ";
+            // str.append(std::to_string(lvlNum));
+            RenderText(shader, str, 250.0f,300.0f, 2.0f, glm::vec3(0.0f, 0.0f, 1.0f));
         }
         if(glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
